@@ -109,4 +109,4 @@ def serve_index():
     return send_from_directory(os.path.join(app.root_path, 'templates'), 'index.html')
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=port)
+    app.run(host='0.0.0.0', port=port)
