@@ -6,6 +6,7 @@ html, body, .background {
   margin: 0;
   padding: 0;
   font-family: "Lato", sans-serif;
+  overflow: hidden;
 }
 
 html {
@@ -146,4 +147,88 @@ nav li a.active {
 #outer, #back {
   position: fixed;
   pointer-events: none;
+}
+
+/* 手機設備（寬度 600px 及以下） */
+@media (max-width: 600px) {
+  #card {
+    width: 90%;
+    height: auto;
+    margin: 10px;
+  }
+  .container {
+    padding: 10px;
+  }
+  nav ul {
+    display: flex;
+    flex-direction: row; /* 始終水平排列 */
+    justify-content: space-around; /* 平均分佈 */
+    gap: 10px; /* 添加項目間距 */
+    padding: 10px 0;
+  }
+  nav li {
+    margin: 0 5px; /* 水平間距 */
+  }
+  nav li a {
+    width: auto;
+    font-size: 14px;
+    padding: 5px;
+  }
+  #card .details .temp {
+    font-size: 40px;
+  }
+  #card .details #summary {
+    font-size: 18px;
+  }
+}
+
+/* 平板設備（寬度 601px 至 1024px） */
+@media (min-width: 601px) and (max-width: 1024px) {
+  #card {
+    width: 70%;
+    height: auto;
+    margin: 20px;
+  }
+  .container {
+    padding: 20px;
+  }
+  nav ul {
+    display: flex;
+    flex-direction: row; /* 保持水平排列 */
+    justify-content: space-evenly; /* 平均間距分佈 */
+    gap: 15px;
+    padding: 15px 0;
+  }
+  nav li {
+    margin: 0 10px; /* 水平間距 */
+  }
+  nav li a {
+    font-size: 16px;
+    width: auto;
+  }
+}
+
+/* 桌面設備（寬度 1025px 及以上） */
+@media (min-width: 1025px) {
+  #card {
+    width: 500px;
+    height: 700px;
+  }
+  .container {
+    padding: 30px;
+  }
+  nav ul {
+    display: flex;
+    flex-direction: row; /* 始終水平排列 */
+    justify-content: center; /* 居中排列 */
+    gap: 20px;
+    padding: 20px 0;
+  }
+  nav li {
+    margin: 0 15px; /* 水平間距更大 */
+  }
+  nav li a {
+    font-size: 18px;
+    width: auto;
+  }
 }

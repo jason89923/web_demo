@@ -1,5 +1,3 @@
-// 📝 獲取所有使用 jQuery 和 Snap SVG 的 DOM 節點
-
 var container = $('.container'); // 容器元素
 var card = $('#card'); // 卡片元素
 var innerSVG = Snap('#inner'); // 內部 SVG
@@ -84,7 +82,7 @@ requestAnimationFrame(tick);
 
 function init() {
 	onResize(); // 初始化尺寸調整
-	
+
 	// 🖱 綁定天氣按鈕事件
 	for (var i = 0; i < weather.length; i++) {
 		var w = weather[i];
@@ -92,13 +90,13 @@ function init() {
 		w.button = b;
 		b.bind('click', w, changeWeather); // 點擊按鈕改變天氣
 	}
-	
+
 	// ☁️ 繪製雲朵
 	for (var i = 0; i < clouds.length; i++) {
 		clouds[i].offset = Math.random() * sizes.card.width; // 隨機初始化位置
 		drawCloud(clouds[i], i);
 	}
-	
+
 	// ☀️ 設定初始天氣
 	TweenMax.set(sunburst.node, { opacity: 0 }); // 隱藏太陽光芒
 	changeWeather(weather[0]); // 設置初始天氣為雪
@@ -111,23 +109,23 @@ function onResize() {
 	sizes.card.width = card.width();
 	sizes.card.height = card.height();
 	sizes.card.offset = card.offset();
-	
+
 	// 📐 更新 SVG 尺寸
 	innerSVG.attr({
 		width: sizes.card.width,
 		height: sizes.card.height
 	});
-	
+
 	outerSVG.attr({
 		width: sizes.container.width,
 		height: sizes.container.height
 	});
-	
+
 	backSVG.attr({
 		width: sizes.container.width,
 		height: sizes.container.height
 	});
-	
+
 	// 更新太陽位置與旋轉動畫
 	TweenMax.set(sunburst.node, {
 		transformOrigin: "50% 50%",
@@ -135,7 +133,7 @@ function onResize() {
 		y: (sizes.card.height / 2) + sizes.card.offset.top
 	});
 	TweenMax.fromTo(sunburst.node, 20, { rotation: 0 }, { rotation: 360, repeat: -1, ease: Power0.easeInOut });
-	
+
 	// 🍃 設置樹葉遮罩位置
 	leafMask.attr({
 		x: sizes.card.offset.left,
@@ -151,12 +149,12 @@ function drawCloud(cloud, i) {
 	我們希望雲的形狀可以循環，同時可以進行動畫效果。
 	使用 Snap SVG 繪製帶有 4 部分的形狀：兩端和兩個弧形。
 	*/
-	
+
 	var space = settings.cloudSpace * i;
 	var height = space + settings.cloudHeight;
 	var arch = height + settings.cloudArch + (Math.random() * settings.cloudArch);
 	var width = sizes.card.width;
-	
+
 	var points = [];
 	points.push('M' + [-(width), 0].join(','));
 	points.push([width, 0].join(','));
@@ -168,7 +166,7 @@ function drawCloud(cloud, i) {
 	points.push([-width, height].join(','));
 	points.push('Q' + [- (width * 2), height / 2].join(','));
 	points.push([-(width), 0].join(','));
-	
+
 	var path = points.join(' ');
 	if (!cloud.path) cloud.path = cloud.group.path(); // 若未初始化則創建
 	cloud.path.animate({ d: path }, 0); // 更新雲朵形狀
@@ -186,9 +184,9 @@ function makeRain() {
 		stroke: currentWeather.type == 'thunder' ? '#777' : '#0000ff', // 顏色根據天氣類型變化
 		strokeWidth: lineWidth
 	});
-	
+
 	rain.push(line); // 將雨滴加入陣列
-	
+
 	// 動畫：從卡片頂部降落到底部，完成後調用 onRainEnd
 	TweenMax.fromTo(line.node, 1, { x: x, y: 0 - lineLength }, {
 		delay: Math.random(),
@@ -480,173 +478,160 @@ function lightning() {
 
 
 function changeWeather(weather) {
-	// 從 GET 數據中提取天氣對象（如果存在）
-	if (weather.data) weather = weather.data;
+    if (weather.data) weather = weather.data; // 從 GET 數據中提取天氣對象
 
+    reset(); // 重置所有天氣樣式
+    currentWeather = weather; // 設定當前天氣
 
-	// 重置所有天氣樣式
-	reset();
+    // 停止當前動畫並更新摘要
+    TweenMax.killTweensOf(summary);
+    TweenMax.to(summary, 1, {
+        opacity: 0,
+        x: -30,
+        onComplete: updateSummaryText,
+        ease: Power4.easeIn
+    });
 
-	// 設定當前天氣
-	currentWeather = weather;
+    container.addClass(weather.type); // 更新容器樣式
 
-	// 停止當前動畫並更新摘要
-	TweenMax.killTweensOf(summary);
-	TweenMax.to(summary, 1, { opacity: 0, x: -30, onComplete: updateSummaryText, ease: Power4.easeIn });
+    const animations = getAnimationsByWeatherType(weather.type); // 獲取動畫參數
 
-	// 更新容器樣式
-	container.addClass(weather.type);
-
-	// 統一動畫參數
-	const animations = {
-		windSpeed: 0.5,
-		rainCount: 0,
-		leafCount: 0,
-		snowCount: 0,
-		sunPosition: { x: sizes.card.width / 2, y: -100 },
-		sunburst: { scale: 0.4, opacity: 0, y: (sizes.container.height / 2) - 50 }
-	};
-
-	// 根據天氣類型設置動畫
-	switch (weather.type) {
-		case 'wind':
-			animations.windSpeed = 3;
-			animations.leafCount = 5;
-			break;
-		case 'sun':
-			animations.windSpeed = 20;
-			animations.sunPosition = { x: sizes.card.width / 2, y: sizes.card.height / 2 };
-			animations.sunburst = { scale: 1, opacity: 0.8, y: (sizes.card.height / 2) + sizes.card.offset.top };
-			break;
-		case 'rain':
-			animations.rainCount = 10;
-			break;
-		case 'thunder':
-			animations.rainCount = 60;
-			animations.windSpeed = 5;
-			startLightningTimer(); // 啟動閃電
-			break;
-		case 'snow':
-			animations.snowCount = 40;
-			break;
-		default:
-			break;
-	}
-
-	// 應用動畫效果
-	TweenMax.to(settings, 3, { 
-		windSpeed: animations.windSpeed,
-		rainCount: animations.rainCount,
-		leafCount: animations.leafCount,
-		snowCount: animations.snowCount,
-		ease: Power2.easeInOut 
-	});
-
-	// 太陽動畫
-	TweenMax.to(sun.node, 4, {
-		x: animations.sunPosition.x,
-		y: animations.sunPosition.y,
-		ease: Power2.easeInOut
-	});
-	TweenMax.to(sunburst.node, 4, {
-		scale: animations.sunburst.scale,
-		opacity: animations.sunburst.opacity,
-		y: animations.sunburst.y,
-		ease: Power2.easeInOut
-	});
+    applyAnimations(animations); // 應用動畫效果
 }
 
+function getAnimationsByWeatherType(type) {
+    const defaultAnimations = {
+        windSpeed: 0.5,
+        rainCount: 0,
+        leafCount: 0,
+        snowCount: 0,
+        sunPosition: { x: sizes.card.width / 2, y: -100 },
+        sunburst: { scale: 0.4, opacity: 0, y: (sizes.container.height / 2) - 50 }
+    };
 
-let weatherUpdateInterval = null; // 保存定時器的變數
+    switch (type) {
+        case 'wind':
+            return { ...defaultAnimations, windSpeed: 3, leafCount: 5 };
+        case 'sun':
+            return {
+                ...defaultAnimations,
+                windSpeed: 20,
+                sunPosition: { x: sizes.card.width / 2, y: sizes.card.height / 2 },
+                sunburst: { scale: 1, opacity: 0.8, y: (sizes.card.height / 2) + sizes.card.offset.top }
+            };
+        case 'rain':
+            return { ...defaultAnimations, rainCount: 10 };
+        case 'thunder':
+            startLightningTimer(); // 啟動閃電
+            return { ...defaultAnimations, rainCount: 60, windSpeed: 5 };
+        case 'snow':
+            return { ...defaultAnimations, snowCount: 40 };
+        default:
+            return defaultAnimations;
+    }
+}
 
-// 定義 GET 請求的函數
+function applyAnimations(animations) {
+    TweenMax.to(settings, 3, {
+        windSpeed: animations.windSpeed,
+        rainCount: animations.rainCount,
+        leafCount: animations.leafCount,
+        snowCount: animations.snowCount,
+        ease: Power2.easeInOut
+    });
+
+    TweenMax.to(sun.node, 4, {
+        x: animations.sunPosition.x,
+        y: animations.sunPosition.y,
+        ease: Power2.easeInOut
+    });
+
+    TweenMax.to(sunburst.node, 4, {
+        scale: animations.sunburst.scale,
+        opacity: animations.sunburst.opacity,
+        y: animations.sunburst.y,
+        ease: Power2.easeInOut
+    });
+}
+
 function fetchWeatherData(callback) {
-	$('#summary').text('載入中...'); // 顯示載入提示
-	$.ajax({
-		url: "/weather",
-		method: "GET",
-		success: function (data) {
-			if (data.error) {
-				console.error("Failed to fetch weather data:", data.error);
-				$('#summary').text('天氣數據加載失敗');
-				return;
-			}
+    $('#summary').text('載入中...');
+    $.ajax({
+        url: "/weather",
+        method: "GET",
+        success: data => {
+            if (data.error) {
+                console.error("Failed to fetch weather data:", data.error);
+                $('#summary').text('天氣數據加載失敗');
+                return;
+            }
 
-			// 更新天氣卡片
-			updateWeatherCard(data);
-
-			// 如果有回調，執行回調，將天氣數據傳遞給外部處理
-			if (callback) callback(data);
-		},
-		error: function (xhr, status, error) {
-			console.error("Error fetching weather data:", error);
-			$('#summary').text('無法獲取天氣數據，請稍後重試');
-		}
-	});
+            updateWeatherCard(data); // 更新天氣卡片
+            callback?.(data); // 執行回調函數
+        },
+        error: (xhr, status, error) => {
+            console.error("Error fetching weather data:", error);
+            $('#summary').text('無法獲取天氣數據，請稍後重試');
+        }
+    });
 }
 
-
-
-// 天氣對應字典
-const weather_dict = {
-	'晴': 'Sun',
-	'多雲': 'Wind',
-	'陰': 'Wind',
-	'短暫陣雨或雷雨': 'Storm',
-	'短暫雨': 'Rain',
-	'短暫陣雨': 'Rain',
-	'雨': 'Rain',
-	'雷雨': 'Storm',
-	'雪': 'Snow',
-	'-99': 'Sun' // 無數據默認為晴天
+const weatherDict = {
+    '晴': 'Sun',
+    '多雲': 'Wind',
+    '陰': 'Wind',
+    '短暫陣雨或雷雨': 'Storm',
+    '短暫雨': 'Rain',
+    '短暫陣雨': 'Rain',
+    '雨': 'Rain',
+    '雷雨': 'Storm',
+    '雪': 'Snow',
+    '-99': 'Sun' // 無數據默認為晴天
 };
 
-// 動畫類型對應
 const weatherMapping = {
-	'Sun': 'sun',
-	'Wind': 'wind',
-	'Rain': 'rain',
-	'Storm': 'thunder',
-	'Snow': 'snow'
+    'Sun': 'sun',
+    'Wind': 'wind',
+    'Rain': 'rain',
+    'Storm': 'thunder',
+    'Snow': 'snow'
 };
 
-// 更新天氣卡片內容
 function updateWeatherCard(data) {
-	const { station, temperature, time, weather } = data;
+    const { station, temperature, time, weather } = data;
 
-	// 更新天氣卡片內容
-	$('.temp').html(`${temperature}<span>°C</span>`); // 更新溫度
-	$('#summary').text(weather); // 更新摘要
-	$('#date').html(`${station} <br> ${time}`); // 使用 <br> 实现换行
+    $('.temp').html(`${temperature}<span>°C</span>`);
+    $('#summary').text(weather);
+    $('#date').html(`${station} <br> ${time}`);
 
+    const weatherType = weatherDict[weather] || 'Sun';
+    const animationType = weatherMapping[weatherType] || 'sun';
 
-	// 獲取對應的動畫類型
-	const weatherType = weather_dict[weather] || 'Sun'; // 默認為晴天
-	const animationType = weatherMapping[weatherType] || 'sun';
-
-	// 切換動畫
-	changeWeather({ type: animationType, name: weather });
+    changeWeather({ type: animationType, name: weather });
 }
 
+$('#button-current').on('click', () => {
+    fetchWeatherData(data => {
+        const weatherType = weatherDict[data.weather] || 'Sun';
+        const animationType = weatherMapping[weatherType] || 'sun';
 
+        changeWeather({ type: animationType, name: data.weather });
 
-// 點擊「Current」按鈕事件
-$('#button-current').on('click', function () {
-	// 發送 GET 請求
-	fetchWeatherData(function (data) {
-		// 映射返回的天氣名稱到動畫類型
-		const weatherType = weather_dict[data.weather] || 'Sun'; // 默認為晴天
-		const animationType = weatherMapping[weatherType] || 'sun';
-
-		// 設置 Current 的名稱和動畫
-		changeWeather({ type: animationType, name: data.weather });
-
-		// 標記「Current」按鈕為激活狀態，並重置其他按鈕
-		$('.weather-button').removeClass('active');
-		$('#button-current').addClass('active'); // 使用返回的天氣名稱更新按鈕文字
-	});
+        $('.weather-button').removeClass('active');
+        $('#button-current').addClass('active');
+    });
 });
 
+$('ul li a').not('#button-current').on('click', function () {
+    clearWeatherCard();
+    $('ul li a').removeClass('active');
+    $(this).addClass('active');
+});
+
+function clearWeatherCard() {
+    $('.temp').html('');
+    $('#date').html('');
+}
 
 
 
